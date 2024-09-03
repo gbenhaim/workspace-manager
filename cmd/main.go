@@ -149,7 +149,7 @@ func getUserNamespaces(e *echo.Echo, nameReq labels.Requirement) ([]core.Namespa
 	}
 	req, _ := labels.NewRequirement("konflux.ci/type", selection.In, []string{"user"})
 	selector := labels.NewSelector().Add(*req)
-	selector = selector.Add(nameReq)
+	selector.Add(nameReq)
 	namespaceList := &core.NamespaceList{}
 	err = cl.List(
 		context.Background(),
@@ -239,15 +239,18 @@ func normalizeEmail(email string) string {
 
 }
 
-func checkNSExistHandler(c echo.Context) error {
+type NSProvisioner struct {
+	k8sClient client.Client
+}
+
+func (nsp *NSProvisioner) CheckNSExistHandler(c echo.Context) error {
 	email := c.Request().Header["X-Email"][0]
 	c.Logger().Info("Checking if namespace exists for user ", email)
 	nsName := normalizeEmail(email)
 	c.Logger().Info("Normalized namespace name  ", nsName)
 
-	cl := getClientOrDie(c.Logger())
 	ns := &core.Namespace{}
-	err := cl.Get(
+	err := nsp.k8sClient.Get(
 		c.Request().Context(),
 		client.ObjectKey{
 			Namespace: "",
@@ -284,7 +287,7 @@ func checkNSExistHandler(c echo.Context) error {
 
 }
 
-func createNSHandler(c echo.Context) error {
+func (nsp *NSProvisioner) CreateNSHandler(c echo.Context) error {
 	// add X-User as a label/annotation
 	// add the original user email as label/annotation
 
@@ -294,7 +297,6 @@ func createNSHandler(c echo.Context) error {
 	nsName := normalizeEmail(email)
 	c.Logger().Info("Normalized namespace name  ", nsName)
 
-	cl := getClientOrDie(c.Logger())
 	ns := &core.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "",
@@ -309,7 +311,7 @@ func createNSHandler(c echo.Context) error {
 		},
 	}
 
-	err := cl.Create(c.Request().Context(), ns)
+	err := nsp.k8sClient.Create(c.Request().Context(), ns)
 
 	if errors.IsAlreadyExists(err) {
 		c.Logger().Infof("Namespace %s already exists", nsName)
@@ -337,7 +339,7 @@ func createNSHandler(c echo.Context) error {
 		},
 	}
 
-	err = cl.Create(c.Request().Context(), rb)
+	err = nsp.k8sClient.Create(c.Request().Context(), rb)
 	if errors.IsAlreadyExists(err) {
 		c.Logger().Warn("Role binding for the initial admin already exists.")
 	} else if err != nil {
@@ -373,8 +375,9 @@ func main() {
 	e.GET("/api/v1/signup", dummysignup.DummySignupGetHandler)
 	if os.Getenv("NS_PROVISION") == "true" {
 		e.Logger.Info("Automatic namespace provisioning is on")
-		e.POST("/api/v1/signup", createNSHandler)
-		e.GET("/api/v1/signup", checkNSExistHandler)
+		nsp := NSProvisioner{k8sClient: getClientOrDie(e.Logger)}
+		e.POST("/api/v1/signup", nsp.CreateNSHandler)
+		e.GET("/api/v1/signup", nsp.CheckNSExistHandler)
 	} else {
 		e.POST("/api/v1/signup", nopSignupPostHandler)
 		e.GET("/api/v1/signup", nopSignupGetHandler)
