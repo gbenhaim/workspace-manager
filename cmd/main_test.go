@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	k8sapi "k8s.io/api/core/v1"
@@ -275,6 +276,8 @@ var _ = BeforeSuite(func() {
 	createRoleBinding(k8sClient, "namespace-access-user-binding", "test-tenant", user1, "namespace-access")
 	createRoleBinding(k8sClient, "namespace-access-user-binding-2", "test-tenant", user2, "namespace-access")
 	createRoleBinding(k8sClient, "namespace-access-user-binding-3", "test-tenant-2", user2, "namespace-access-2")
+
+	time.Sleep(3 * time.Second)
 })
 
 var _ = AfterSuite(func() {
