@@ -262,7 +262,7 @@ var _ = BeforeSuite(func() {
 	k8sClient = utils.StartTestEnv(schema, testEnv)
 
 	serverProcess, serverCancelFunc = utils.CreateWorkspaceManagerServer("main.go", nil, "")
-	utils.WaitForWorkspaceManagerServerToServe()
+	utils.WaitForWorkspaceManagerServerToServe("http://localhost:5000/health")
 
 	user1 := "user1@konflux.dev"
 	user2 := "user2@konflux.dev"

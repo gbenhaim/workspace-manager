@@ -122,8 +122,7 @@ func CreateLogFile(dir string) *os.File {
 }
 
 // Wait for workspace-manager to start serving http requests
-func WaitForWorkspaceManagerServerToServe() {
-	endpoint := "http://localhost:5000/health"
+func WaitForWorkspaceManagerServerToServe(endpoint string) {
 	httpClient := &http.Client{}
 	request, err := http.NewRequest("GET", endpoint, nil)
 	Expect(err).NotTo(HaveOccurred())

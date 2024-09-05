@@ -36,10 +36,10 @@ var _ = BeforeSuite(func() {
 	k8sClient = utils.StartTestEnv(schema, testEnv)
 	serverProcess, serverCancelFunc = utils.CreateWorkspaceManagerServer(
 		"../../../cmd/main.go",
-		[]string{"NS_PROVISION=true"},
+		[]string{"WM_NS_PROVISION=true", "WM_HTTP_PORT=5001"},
 		"",
 	)
-	utils.WaitForWorkspaceManagerServerToServe()
+	utils.WaitForWorkspaceManagerServerToServe("http://localhost:5001/health")
 })
 
 var _ = AfterSuite(func() {
@@ -48,7 +48,7 @@ var _ = AfterSuite(func() {
 })
 
 var _ = Describe("T", func() {
-	endpoint := "http://localhost:5000/api/v1/signup"
+	endpoint := "http://localhost:5001/api/v1/signup"
 	httpClient := &http.Client{}
 	headers := map[string][]string{
 		"X-Email": {"user1@konflux.dev"},

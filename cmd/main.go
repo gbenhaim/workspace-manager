@@ -26,12 +26,7 @@ import (
 	crt "github.com/codeready-toolchain/api/api/v1alpha1"
 	"k8s.io/client-go/kubernetes"
 
-<<<<<<< HEAD
 	dummysignup "github.com/konflux-ci/workspace-manager/pkg/handlers/signup/dummy"
-)
-=======
-	dummyhandler "github.com/konflux-ci/workspace-manager/pkg/handlers/signup/dummy"
->>>>>>> db37053 (move prov handler to module)
 
 	provisioner "github.com/konflux-ci/workspace-manager/pkg/handlers/signup/provisioner"
 )
@@ -160,9 +155,6 @@ func getUserNamespaces(e *echo.Echo, nameReq labels.Requirement) ([]core.Namespa
 		&client.ListOptions{LabelSelector: selector},
 	)
 
-	for _, ns := range namespaceList.Items {
-		fmt.Printf("%v\n", ns)
-	}
 	if err != nil {
 		return nil, err
 	}
@@ -218,6 +210,15 @@ func getClientOrDie(logger echo.Logger) client.Client {
 	return cl
 }
 
+func getHTTPPort() string {
+	port := "5000"
+	if val, ok := os.LookupEnv("WM_HTTP_PORT"); ok {
+		port = val
+	}
+
+	return fmt.Sprintf(":%s", port)
+}
+
 func main() {
 	e := echo.New()
 	e.Logger.SetLevel(log.INFO)
@@ -228,7 +229,7 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	if os.Getenv("NS_PROVISION") == "true" {
+	if os.Getenv("WM_NS_PROVISION") == "true" {
 		e.Logger.Info("Automatic namespace provisioning is on")
 		nsp := provisioner.NewNSProvisioner(getClientOrDie(e.Logger))
 		e.POST("/api/v1/signup", nsp.CreateNSHandler)
@@ -281,5 +282,5 @@ func main() {
 		return c.NoContent(http.StatusOK)
 	})
 
-	e.Logger.Fatal(e.Start(":5000"))
+	e.Logger.Fatal(e.Start(getHTTPPort()))
 }
