@@ -152,7 +152,7 @@ func getUserNamespaces(e *echo.Echo, nameReq labels.Requirement) ([]core.Namespa
 	}
 	req, _ := labels.NewRequirement("konflux.ci/type", selection.In, []string{"user"})
 	selector := labels.NewSelector().Add(*req)
-	selector.Add(nameReq)
+	selector = selector.Add(nameReq)
 	namespaceList := &core.NamespaceList{}
 	err = cl.List(
 		context.Background(),
